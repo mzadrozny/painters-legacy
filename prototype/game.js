@@ -81,10 +81,9 @@ const players = [
   },
 ];
 
-// Funckja do odczytu wyboru dla graczy
 function getPlayerType(playerIndex) {
   const playerType = document.querySelector(`input[name="player${playerIndex}"]:checked`).value;
-  return playerType === "human" ? false : true;  // False for human, true for bot
+  return playerType === "human" ? false : true;  
 }
 
 let occupiedPixels = Array.from(
@@ -97,14 +96,14 @@ let powerUps = [];
 function spawnPowerUp() {
   const types = ["speed", "slowdown"];
   const type = types[Math.floor(Math.random() * types.length)];
-  
+
   let x, y;
   let foundSpot = false;
 
   while (!foundSpot) {
     x = Math.random() * (canvas.width - gridSize);
     y = Math.random() * (canvas.height - gridSize);
-    
+
     foundSpot = true;
     for (let i = 0; i < players.length; i++) {
       const dist = Math.sqrt(Math.pow(players[i].x - x, 2) + Math.pow(players[i].y - y, 2));
@@ -115,39 +114,17 @@ function spawnPowerUp() {
     }
   }
 
-  // Dodajemy power-up z dodatkowym polem 'used'
   powerUps.push({ x, y, type, createdAt: Date.now(), used: false });
 }
-
-
-// function drawPowerUps() {
-//   const currentTime = Date.now();
-//   powerUps.forEach((powerUp, index) => {
-
-//     if (currentTime - powerUp.createdAt > 10000) {
-//       powerUps.splice(index, 1);
-//       return;
-//     }
-
-//     ctx.fillStyle = powerUp.type === "speed" ? "yellow" :
-//                     powerUp.type === "invincibility" ? "cyan" :
-//                     powerUp.type === "reverse" ? "purple" :
-//                     powerUp.type === "invisible" ? "gray" : "pink";
-//     ctx.beginPath();
-//     ctx.arc(powerUp.x + gridSize / 2, powerUp.y + gridSize / 2, gridSize / 3, 0, Math.PI * 2);
-//     ctx.fill();
-//   });
-// }
 
 function drawPowerUps() {
   const currentTime = Date.now();
   powerUps.forEach((powerUp, index) => {
-    // Jeśli power-up został użyty lub minął czas, nie rysujemy go
+
     if (currentTime - powerUp.createdAt > 10000) {
       return;
     }
 
-    // Jeśli power-up został użyty, rysujemy go jako czarny
     const color = powerUp.used ? "black" : (
       powerUp.type === "speed" ? "yellow" :
       powerUp.type === "invincibility" ? "cyan" :
@@ -168,13 +145,13 @@ function checkPowerUpCollision(player) {
   powerUps = powerUps.filter(powerUp => {
     const dist = Math.sqrt((player.x - powerUp.x) ** 2 + (player.y - powerUp.y) ** 2);
 
-    if (dist < gridSize && !powerUp.used) {  // Sprawdzamy, czy power-up nie został już użyty
-      activatePowerUp(player, powerUp.type); // Aktywujemy power-up
-      powerUp.used = true;  // Oznaczamy power-up jako użyty
-      return false;  // Usuwamy ten power-up z tablicy
+    if (dist < gridSize && !powerUp.used) {  
+      activatePowerUp(player, powerUp.type); 
+      powerUp.used = true;  
+      return false;  
     }
 
-    return true;  // Zostawiamy power-upy, które nie zostały użyte
+    return true;  
   });
 }
 
@@ -210,12 +187,11 @@ function assignRandomLetters() {
 assignRandomLetters();
 
 function resetGame() {
-  // Zmieniamy ustawienia graczy zgodnie z wyborami
+
   players.forEach((player, index) => {
-    player.isBot = getPlayerType(index + 1);  // Gracz 1 do 4
+    player.isBot = getPlayerType(index + 1);  
   });
 
-  // Resetowanie innych elementów
   players.forEach((player) => {
     player.x = Math.random() * canvas.width;
     player.y = Math.random() * canvas.height;
@@ -340,87 +316,6 @@ function resolveWallCollision(player) {
   }
 }
 
-// function update() {
-//   players.forEach((player) => {
-//     if (player.blocked && Date.now() < player.blockedUntil) {
-//       return;
-//     }
-
-//     if (!player.blocked) {
-//       if (player.turningLeft) {
-//         player.direction = (player.direction - turnSpeed + 360) % 360;
-//       }
-//       if (player.turningRight) {
-//         player.direction = (player.direction + turnSpeed) % 360;
-//       }
-
-//       if (player.moving) {
-//         const radians = (player.direction * Math.PI) / 180;
-//         const prevX = player.x;
-//         const prevY = player.y;
-
-//         player.x += Math.cos(radians) * player.speed;
-//         player.y += Math.sin(radians) * player.speed;
-
-//         ctx.fillStyle = player.color;
-//         ctx.beginPath();
-//         ctx.arc(
-//           prevX + gridSize / 2,
-//           prevY + gridSize / 2,
-//           gridSize / 2,
-//           0,
-//           Math.PI * 2
-//         );
-//         ctx.fill();
-
-//         const gridX = Math.floor(prevX / gridSize);
-//         const gridY = Math.floor(prevY / gridSize);
-
-//         if (!player.blocked) {
-//           for (let y = -gridSize / 2; y < gridSize / 2; y++) {
-//             for (let x = -gridSize / 2; x < gridSize / 2; x++) {
-//               const distance = Math.sqrt(x * x + y * y);
-//               if (distance <= gridSize / 2) {
-//                 const newX = gridX + Math.floor(x / gridSize);
-//                 const newY = gridY + Math.floor(y / gridSize);
-
-//                 if (
-//                   newX >= 0 &&
-//                   newX < Math.ceil(canvas.width / gridSize) &&
-//                   newY >= 0 &&
-//                   newY < Math.ceil(canvas.height / gridSize)
-//                 ) {
-//                   occupiedPixels[newY][newX] = player.color;
-//                 }
-//               }
-//             }
-//           }
-//         }
-
-//         resolveWallCollision(player);
-//       }
-//     }
-
-//     checkPowerUpCollision(player);
-//   });
-
-//   for (let i = 0; i < players.length; i++) {
-//     for (let j = i + 1; j < players.length; j++) {
-//       if (checkPlayerCollision(players[i], players[j])) {
-//         resolvePlayerCollision(players[i], players[j]);
-//       }
-//     }
-//   }
-
-//   players.forEach((player) => {
-//     if (player.isBot) {
-//       const rand = Math.random();
-//       if (rand < 0.02) player.turningLeft = !player.turningLeft;
-//       if (rand > 0.98) player.turningRight = !player.turningRight;
-//     }
-//   });
-// }
-
 function update() {
   players.forEach(player => {
     if (player.blocked && Date.now() < player.blockedUntil) {
@@ -471,15 +366,13 @@ function update() {
       }
     }
 
-    checkPowerUpCollision(player);  // Sprawdzamy, czy gracz aktywował power-up
+    checkPowerUpCollision(player);  
   });
 
-  // Usuwamy power-upy, które minęły swój czas lub zostały użyte
   powerUps = powerUps.filter(powerUp => {
     return Date.now() - powerUp.createdAt <= 10000 && !powerUp.used;
   });
 
-  // Sprawdzamy kolizje między graczami
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
       if (checkPlayerCollision(players[i], players[j])) {
@@ -497,30 +390,25 @@ function update() {
   });
 }
 
-
 function displayPlayerInfo() {
   const playersInfoContainer = document.getElementById("playersInfo");
-  playersInfoContainer.innerHTML = '';  // Wyczyść poprzednią zawartość
+  playersInfoContainer.innerHTML = '';  
   playersInfoContainer.classList.add("player-info-container");
 
   players.forEach((player, index) => {
-    // Tworzymy nowy element <div> dla każdego gracza
+
     const playerInfo = document.createElement("div");
     playerInfo.classList.add("player-info");
-    
-    // Tworzymy element <p> z kolorem gracza
+
     const colorInfo = document.createElement("p");
     colorInfo.textContent = `Gracz ${index + 1}: Kolor - ${player.color}`;
-    
-    // Tworzymy element <p> z informacjami o sterowaniu
+
     const controlInfo = document.createElement("p");
     controlInfo.textContent = `Sterowanie: Lewo - ${player.keys.left}, Prawo - ${player.keys.right}`;
-    
-    // Dodajemy te elementy do kontenera gracza
+
     playerInfo.appendChild(colorInfo);
     playerInfo.appendChild(controlInfo);
-    
-    // Dodajemy informację o graczu do głównego kontenera
+
     playersInfoContainer.appendChild(playerInfo);
   });
 }
@@ -532,7 +420,6 @@ document.getElementById("startButton").addEventListener("click", () => {
 document.getElementById("playersInfo");
 
 displayPlayerInfo();
-
 
 document.addEventListener("keydown", (e) => {
   if (gameStarted) {
