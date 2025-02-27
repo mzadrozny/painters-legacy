@@ -34,11 +34,11 @@
       }
 
       #startButton {
-        position: fixed;
-        top: 20px;
+        margin-top: 30px;
         left: 50%;
-        transform: translateX(-50%);
         font-size: 20px;
+        margin-left: auto;
+        margin-right: auto;
         padding: 10px 20px;
         background-color: #28a745;
         color: white;
@@ -50,12 +50,101 @@
       #startButton:hover {
         background-color: #218838;
       }
+
+      #playerSelection {
+        position: fixed;
+        top: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .player-select {
+        margin: 10px;
+        font-size: 18px;
+      }
+
+      .player-select input {
+        margin-right: 10px;
+      }
+
+      .player-info-container {
+        display: flex;
+      }
+
+      .player-info {
+        background-color: #f0f0f0;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+      }
+
+      .player-info p {
+        margin: 5px 0;
+        font-size: 14px;
+        color: #333;
+      }
     </style>
   </head>
   <body>
     <canvas id="gameCanvas"></canvas>
     <div id="score"></div>
-    <button id="startButton">Start</button>
+    <div id="playerSelection">
+      <div class="player-select">
+        <label for="player1">Gracz 1:</label>
+        <input
+          type="radio"
+          id="player1-human"
+          name="player1"
+          value="human"
+          checked
+        />
+        Człowiek
+        <input type="radio" id="player1-bot" name="player1" value="bot" /> Bot
+      </div>
+      <div class="player-select">
+        <label for="player2">Gracz 2:</label>
+        <input
+          type="radio"
+          id="player2-human"
+          name="player2"
+          value="human"
+          checked
+        />
+        Człowiek
+        <input type="radio" id="player2-bot" name="player2" value="bot" /> Bot
+      </div>
+      <div class="player-select">
+        <label for="player3">Gracz 3:</label>
+        <input
+          type="radio"
+          id="player3-human"
+          name="player3"
+          value="human"
+          checked
+        />
+        Człowiek
+        <input type="radio" id="player3-bot" name="player3" value="bot" /> Bot
+      </div>
+      <div class="player-select">
+        <label for="player4">Gracz 4:</label>
+        <input
+          type="radio"
+          id="player4-human"
+          name="player4"
+          value="human"
+          checked
+        />
+        Człowiek
+        <input type="radio" id="player4-bot" name="player4" value="bot" /> Bot
+      </div>
+      <div id="playersInfo"></div>
+
+      <button id="startButton">Start Game</button>
+    </div>
+
     <script src="game.js"></script>
   </body>
 </html>
