@@ -81,12 +81,6 @@ const players = [
   },
 ];
 
-// Funckja do odczytu wyboru dla graczy
-function getPlayerType(playerIndex) {
-  const playerType = document.querySelector(`input[name="player${playerIndex}"]:checked`).value;
-  return playerType === "human" ? false : true;  // False for human, true for bot
-}
-
 let occupiedPixels = Array.from(
   { length: Math.ceil(canvas.height / gridSize) },
   () => Array(Math.ceil(canvas.width / gridSize)).fill(null)
@@ -210,12 +204,6 @@ function assignRandomLetters() {
 assignRandomLetters();
 
 function resetGame() {
-  // Zmieniamy ustawienia graczy zgodnie z wyborami
-  players.forEach((player, index) => {
-    player.isBot = getPlayerType(index + 1);  // Gracz 1 do 4
-  });
-
-  // Resetowanie innych elementów
   players.forEach((player) => {
     player.x = Math.random() * canvas.width;
     player.y = Math.random() * canvas.height;
@@ -227,11 +215,15 @@ function resetGame() {
     player.blockedUntil = 0;
   });
 
+  occupiedPixels = Array.from(
+    { length: Math.ceil(canvas.height / gridSize) },
+    () => Array(Math.ceil(canvas.width / gridSize)).fill(null)
+  );
+
   gameTime = 30;
   document.getElementById("score").innerHTML = "";
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  document.getElementById("playerSelection").style.display = "none";
   document.getElementById("startButton").style.display = "none";
 
   clearInterval(gameInterval);
@@ -498,41 +490,10 @@ function update() {
 }
 
 
-function displayPlayerInfo() {
-  const playersInfoContainer = document.getElementById("playersInfo");
-  playersInfoContainer.innerHTML = '';  // Wyczyść poprzednią zawartość
-  playersInfoContainer.classList.add("player-info-container");
-
-  players.forEach((player, index) => {
-    // Tworzymy nowy element <div> dla każdego gracza
-    const playerInfo = document.createElement("div");
-    playerInfo.classList.add("player-info");
-    
-    // Tworzymy element <p> z kolorem gracza
-    const colorInfo = document.createElement("p");
-    colorInfo.textContent = `Gracz ${index + 1}: Kolor - ${player.color}`;
-    
-    // Tworzymy element <p> z informacjami o sterowaniu
-    const controlInfo = document.createElement("p");
-    controlInfo.textContent = `Sterowanie: Lewo - ${player.keys.left}, Prawo - ${player.keys.right}`;
-    
-    // Dodajemy te elementy do kontenera gracza
-    playerInfo.appendChild(colorInfo);
-    playerInfo.appendChild(controlInfo);
-    
-    // Dodajemy informację o graczu do głównego kontenera
-    playersInfoContainer.appendChild(playerInfo);
-  });
-}
 
 document.getElementById("startButton").addEventListener("click", () => {
   resetGame();
 });
-
-document.getElementById("playersInfo");
-
-displayPlayerInfo();
-
 
 document.addEventListener("keydown", (e) => {
   if (gameStarted) {
