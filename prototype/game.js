@@ -1,16 +1,15 @@
-// Inicjalizacja canvas
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 let gameStarted = false;
-let gameTime = 30; // Czas w sekundach (30 sekund na początek)
+let gameTime = 30;
 let gameInterval;
 let timerInterval;
 
 function resizeCanvas() {
   canvas.width = window.innerWidth - 4;
-  canvas.height = window.innerHeight - 300 - 4; // Uwzględniamy border
-  gridSize = Math.floor(canvas.width / 20); // Można dostosować wartość 20, aby zmienić liczbę "komórek" na szerokość
+  canvas.height = window.innerHeight - 300 - 4;
+  gridSize = Math.floor(canvas.width / 20);
 }
 
 resizeCanvas();
@@ -32,7 +31,6 @@ let occupiedPixels = Array.from({ length: Math.ceil(canvas.height / gridSize) },
 
 let powerUps = [];
 
-// Funkcja do tworzenia losowego power-upa
 function spawnPowerUp() {
   const types = ["speed", "invincibility", "reverse", "invisible", "slowdown"];
   const type = types[Math.floor(Math.random() * types.length)];
@@ -44,7 +42,6 @@ function spawnPowerUp() {
     x = Math.random() * (canvas.width - gridSize);
     y = Math.random() * (canvas.height - gridSize);
     
-    // Sprawdzamy, czy w tym miejscu nie ma gracza
     foundSpot = true;
     for (let i = 0; i < players.length; i++) {
       const dist = Math.sqrt(Math.pow(players[i].x - x, 2) + Math.pow(players[i].y - y, 2));
@@ -58,7 +55,6 @@ function spawnPowerUp() {
   powerUps.push({ x, y, type });
 }
 
-
 function drawPowerUps() {
   powerUps.forEach(powerUp => {
     ctx.fillStyle = powerUp.type === "speed" ? "yellow" :
@@ -71,41 +67,34 @@ function drawPowerUps() {
   });
 }
 
-// Funkcja do sprawdzania, czy gracz zebrał power-up
 function checkPowerUpCollision(player) {
-  if (player.blocked) return; // Jeśli gracz jest zablokowany, nie zbiera power-upa
+  if (player.blocked) return;
   
   powerUps = powerUps.filter(powerUp => {
     const dist = Math.sqrt((player.x - powerUp.x) ** 2 + (player.y - powerUp.y) ** 2);
     if (dist < gridSize) {
       activatePowerUp(player, powerUp.type);
-      return false; // Usuwamy power-up po zebraniu
+      return false;
     }
     return true;
   });
 }
 
-// Funkcja aktywująca efekt power-upa
 function activatePowerUp(player, type) {
   if (type === "speed") {
     player.speed = 2;
-    console.log('speeeeeeeeeeed');
     setTimeout(() => player.speed = speed, 5000);
   } else if (type === "invincibility") {
     player.invincible = true;
-    console.log('iiiiiiiiiiinv');
     setTimeout(() => player.invincible = false, 5000);
   } else if (type === "reverse") {
-    console.log('speeeeeeeeeeed');
     [player.keys.left, player.keys.right] = [player.keys.right, player.keys.left];
     setTimeout(() => [player.keys.left, player.keys.right] = [player.keys.right, player.keys.left], 5000);
   } else if (type === "invisible") {
     player.invisible = true;
-    console.log('invisible');
     setTimeout(() => player.invisible = false, 5000);
   } else if (type === "slowdown") {
-    console.log('slowdown');
-    player.speed = 0.1; // Zmniejszamy prędkość tylko dla gracza
+    player.speed = 0.1;
     setTimeout(() => player.speed = speed, 5000);
   }
 }
@@ -197,16 +186,15 @@ function checkCollision(player) {
 
 function checkPlayerCollision(player1, player2) {
   const dist = Math.sqrt(Math.pow(player2.x - player1.x, 2) + Math.pow(player2.y - player1.y, 2));
-  return dist < gridSize; // Jeśli gracze są zbyt blisko siebie (w promieniu gridSize)
+  return dist < gridSize;
 }
 
 function resolvePlayerCollision(player1, player2) {
-  // W przypadku kolizji z innym graczem – obaj gracze są blokowani na 3 sekundy
   player1.blocked = true;
   player2.blocked = true;
 
-  player1.blockedUntil = Date.now() + 3000; // Zablokowanie na 3 sekundy
-  player2.blockedUntil = Date.now() + 3000; // Zablokowanie na 3 sekundy
+  player1.blockedUntil = Date.now() + 3000;
+  player2.blockedUntil = Date.now() + 3000;
 
   setTimeout(() => {
     player1.blocked = false;
@@ -216,7 +204,6 @@ function resolvePlayerCollision(player1, player2) {
   const angle1 = Math.atan2(player2.y - player1.y, player2.x - player1.x);
   const angle2 = Math.atan2(player1.y - player2.y, player1.x - player2.x);
 
-  // Odbicie w kierunku przeciwnym
   player1.x -= Math.cos(angle1) * 30;
   player1.y -= Math.sin(angle1) * 30;
   player2.x -= Math.cos(angle2) * 30;
@@ -225,7 +212,6 @@ function resolvePlayerCollision(player1, player2) {
 
 function resolveWallCollision(player) {
   if (checkCollision(player)) {
-    // Gracz uderza w ścianę, ale nie zostaje zablokowany ani nie odbija się
     player.x = Math.max(0, Math.min(player.x, canvas.width - gridSize));
     player.y = Math.max(0, Math.min(player.y, canvas.height - gridSize));
   }
@@ -234,11 +220,10 @@ function resolveWallCollision(player) {
 function update() {
   players.forEach(player => {
     if (player.blocked && Date.now() < player.blockedUntil) {
-      // Jeśli gracz jest zablokowany, nie wykonuje ruchu
       return;
     }
 
-    if (!player.blocked) { // Gracz może się poruszać
+    if (!player.blocked) {
       if (player.turningLeft) {
         player.direction = (player.direction - turnSpeed + 360) % 360;
       }
@@ -251,8 +236,7 @@ function update() {
         const prevX = player.x;
         const prevY = player.y;
 
-        // Używamy player.speed do obliczenia nowego ruchu gracza
-        player.x += Math.cos(radians) * player.speed;  // Zmienna speed powinna tu być użyta
+        player.x += Math.cos(radians) * player.speed;
         player.y += Math.sin(radians) * player.speed;
 
         ctx.fillStyle = player.color;
@@ -263,7 +247,6 @@ function update() {
         const gridX = Math.floor(prevX / gridSize);
         const gridY = Math.floor(prevY / gridSize);
 
-        // Zostawianie śladu tylko jeśli gracz nie jest zablokowany
         if (!player.blocked) {
           for (let y = -gridSize / 2; y < gridSize / 2; y++) {
             for (let x = -gridSize / 2; x < gridSize / 2; x++) {
@@ -280,16 +263,13 @@ function update() {
           }
         }
 
-        // Rozwiązywanie kolizji ze ścianą
-        resolveWallCollision(player);  
+        resolveWallCollision(player);
       }
     }
 
-    // Sprawdzamy kolizję z power-upami
     checkPowerUpCollision(player);
   });
 
-  // Sprawdzanie kolizji między graczami
   for (let i = 0; i < players.length; i++) {
     for (let j = i + 1; j < players.length; j++) {
       if (checkPlayerCollision(players[i], players[j])) {
@@ -306,7 +286,6 @@ function update() {
     }
   });
 }
-
 
 document.getElementById("startButton").addEventListener("click", () => {
   resetGame();
