@@ -5,12 +5,26 @@ let gameStarted = false;
 let gameTime = 30;
 let gameInterval;
 let timerInterval;
+const colors = ["red", "blue", "green", "yellow", "orange", "purple"];
+let usedColors = [];
 
 function resizeCanvas() {
   canvas.width = window.innerWidth - 4;
   canvas.height = window.innerHeight - 300 - 4;
   gridSize = Math.floor(canvas.width / 20);
 }
+
+const playerImages = {
+  red: new Image(),
+  blue: new Image(),
+  green: new Image(),
+  orange: new Image(),
+};
+
+playerImages.red.src = "./assets/brush.png";
+playerImages.blue.src = "./assets/brush.png";
+playerImages.green.src = "./assets/brush.png";
+playerImages.orange.src = "./assets/brush.png";
 
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
@@ -33,6 +47,7 @@ const players = [
     blocked: false,
     blockedUntil: 0,
     letter: null,
+    title: "pierwszy",
   },
   {
     x: 200,
@@ -48,6 +63,7 @@ const players = [
     blocked: false,
     blockedUntil: 0,
     letter: null,
+    title: "drugi",
   },
   {
     x: 300,
@@ -63,6 +79,7 @@ const players = [
     blocked: false,
     blockedUntil: 0,
     letter: null,
+    title: "trzeci",
   },
   {
     x: 400,
@@ -78,12 +95,24 @@ const players = [
     blocked: false,
     blockedUntil: 0,
     letter: null,
+    title: "czwarty",
   },
 ];
 
+function updatePlayerColors() {
+  players.forEach((player, index) => {
+    const selectedColor = document.getElementById(
+      `colorPicker${index + 1}`
+    ).value;
+    player.color = selectedColor;
+  });
+}
+
 function getPlayerType(playerIndex) {
-  const playerType = document.querySelector(`input[name="player${playerIndex}"]:checked`).value;
-  return playerType === "human" ? false : true;  
+  const playerType = document.querySelector(
+    `input[name="player${playerIndex}"]:checked`
+  ).value;
+  return playerType === "human" ? false : true;
 }
 
 let occupiedPixels = Array.from(
@@ -94,7 +123,7 @@ let occupiedPixels = Array.from(
 let powerUps = [];
 
 function spawnPowerUp() {
-  const types = ["speed", "slowdown"];
+  const types = ["speed", "slowdown", "explosion"];
   const type = types[Math.floor(Math.random() * types.length)];
 
   let x, y;
@@ -106,7 +135,9 @@ function spawnPowerUp() {
 
     foundSpot = true;
     for (let i = 0; i < players.length; i++) {
-      const dist = Math.sqrt(Math.pow(players[i].x - x, 2) + Math.pow(players[i].y - y, 2));
+      const dist = Math.sqrt(
+        Math.pow(players[i].x - x, 2) + Math.pow(players[i].y - y, 2)
+      );
       if (dist < gridSize) {
         foundSpot = false;
         break;
@@ -120,58 +151,212 @@ function spawnPowerUp() {
 function drawPowerUps() {
   const currentTime = Date.now();
   powerUps.forEach((powerUp, index) => {
-
     if (currentTime - powerUp.createdAt > 10000) {
       return;
     }
 
-    const color = powerUp.used ? "black" : (
-      powerUp.type === "speed" ? "yellow" :
-      powerUp.type === "invincibility" ? "cyan" :
-      powerUp.type === "reverse" ? "purple" :
-      powerUp.type === "invisible" ? "gray" : "pink"
-    );
+    const color = powerUp.used
+      ? "blue"
+      : powerUp.type === "speed"
+      ? "yellow"
+      : powerUp.type === "invincibility"
+      ? "cyan"
+      : powerUp.type === "explosion"
+      ? "black"
+      : powerUp.type === "invisible"
+      ? "gray"
+      : "pink";
 
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(powerUp.x + gridSize / 2, powerUp.y + gridSize / 2, gridSize / 3, 0, Math.PI * 2);
+    ctx.arc(
+      powerUp.x + gridSize / 2,
+      powerUp.y + gridSize / 2,
+      gridSize / 3,
+      0,
+      Math.PI * 2
+    );
     ctx.fill();
   });
+}
+
+function explode(player) {
+  const explosionRadius = 150;
+  const centerX = player.x + gridSize / 2;
+  const centerY = player.y + gridSize / 2;
+
+  ctx.beginPath();
+  ctx.arc(centerX, centerY, explosionRadius, 0, Math.PI * 2);
+  ctx.fillStyle = player.color;
+  ctx.fill();
+
+  for (let angle = 0; angle < 360; angle++) {
+    for (let dist = 0; dist < explosionRadius; dist += gridSize) {
+      const x = centerX + Math.cos(angle * Math.PI / 180) * dist;
+      const y = centerY + Math.sin(angle * Math.PI / 180) * dist;
+
+      const gridX = Math.floor(x / gridSize);
+      const gridY = Math.floor(y / gridSize);
+
+      if (gridX >= 0 && gridX < Math.ceil(canvas.width / gridSize) &&
+          gridY >= 0 && gridY < Math.ceil(canvas.height / gridSize)) {
+
+        occupiedPixels[gridY][gridX] = player.color;
+      }
+    }
+  }
 }
 
 function checkPowerUpCollision(player) {
   if (player.blocked) return;
 
-  powerUps = powerUps.filter(powerUp => {
-    const dist = Math.sqrt((player.x - powerUp.x) ** 2 + (player.y - powerUp.y) ** 2);
+  powerUps = powerUps.filter((powerUp) => {
+    const dist = Math.sqrt(
+      (player.x - powerUp.x) ** 2 + (player.y - powerUp.y) ** 2
+    );
 
-    if (dist < gridSize && !powerUp.used) {  
-      activatePowerUp(player, powerUp.type); 
-      powerUp.used = true;  
-      return false;  
+    if (dist < gridSize && !powerUp.used) {
+      activatePowerUp(player, powerUp.type);
+      powerUp.used = true;
+      return false;
     }
 
-    return true;  
+    return true;
   });
 }
 
 function activatePowerUp(player, type) {
   if (type === "speed") {
     player.speed = 2;
-    setTimeout(() => player.speed = speed, 5000);
+    setTimeout(() => (player.speed = speed), 5000);
   } else if (type === "invincibility") {
     player.invincible = true;
-    setTimeout(() => player.invincible = false, 5000);
+    setTimeout(() => (player.invincible = false), 5000);
   } else if (type === "reverse") {
-    [player.keys.left, player.keys.right] = [player.keys.right, player.keys.left];
-    setTimeout(() => [player.keys.left, player.keys.right] = [player.keys.right, player.keys.left], 5000);
+    [player.keys.left, player.keys.right] = [
+      player.keys.right,
+      player.keys.left,
+    ];
+    setTimeout(
+      () =>
+        ([player.keys.left, player.keys.right] = [
+          player.keys.right,
+          player.keys.left,
+        ]),
+      5000
+    );
   } else if (type === "invisible") {
     player.invisible = true;
-    setTimeout(() => player.invisible = false, 5000);
+    setTimeout(() => (player.invisible = false), 5000);
   } else if (type === "slowdown") {
     player.speed = 0.1;
     console.log(`Player speed (after slowdown): ${player.speed}`);
-    setTimeout(() => player.speed = speed, 5000);
+    setTimeout(() => (player.speed = speed), 5000);
+  } else if (type === "explosion") {
+    console.log('EXPLOOOOOODE');
+    explode(player);
+  }
+}
+
+function getNearestPowerUp(bot) {
+  let nearestPowerUp = null;
+  let minDist = Infinity;
+
+  powerUps.forEach((powerUp) => {
+    if (!powerUp.used) {
+      const dist = Math.sqrt(
+        (bot.x - powerUp.x) ** 2 + (bot.y - powerUp.y) ** 2
+      );
+      if (dist < minDist) {
+        minDist = dist;
+        nearestPowerUp = powerUp;
+      }
+    }
+  });
+
+  return nearestPowerUp;
+}
+
+function botLogic(bot) {
+  const nearestPowerUp = getNearestPowerUp(bot);
+  const targetX = nearestPowerUp
+    ? nearestPowerUp.x
+    : getNextColoringTarget(bot).x;
+  const targetY = nearestPowerUp
+    ? nearestPowerUp.y
+    : getNextColoringTarget(bot).y;
+
+  const angleToTarget = Math.atan2(targetY - bot.y, targetX - bot.x);
+  const distToTarget = Math.sqrt(
+    (targetX - bot.x) ** 2 + (targetY - bot.y) ** 2
+  );
+
+  if (distToTarget < 50) {
+    bot.x += Math.cos(angleToTarget) * bot.speed;
+    bot.y += Math.sin(angleToTarget) * bot.speed;
+  }
+
+  if (distToTarget < 10 && nearestPowerUp) {
+    activatePowerUp(bot, nearestPowerUp.type);
+    nearestPowerUp.used = true;
+  }
+}
+
+function getNextColoringTarget(bot) {
+  let targetX = Math.random() * canvas.width;
+  let targetY = Math.random() * canvas.height;
+
+  while (
+    occupiedPixels[Math.floor(targetY / gridSize)][
+      Math.floor(targetX / gridSize)
+    ] !== null
+  ) {
+    targetX = Math.random() * canvas.width;
+    targetY = Math.random() * canvas.height;
+  }
+
+  return { x: targetX, y: targetY };
+}
+
+function botDecision(bot) {
+  if (bot.x == null || bot.y == null) {
+    console.error("Bot has invalid coordinates:", bot);
+    return;
+  }
+
+
+  const nearestPowerUp = getNearestPowerUp(bot);
+
+
+  if (nearestPowerUp) {
+    const distToPowerUp = Math.sqrt(
+      (bot.x - nearestPowerUp.x) ** 2 + (bot.y - nearestPowerUp.y) ** 2
+    );
+
+    if (distToPowerUp < 50) {
+      const angleToPowerUp = Math.atan2(
+        nearestPowerUp.y - bot.y,
+        nearestPowerUp.x - bot.x
+      );
+      bot.x += Math.cos(angleToPowerUp) * bot.speed;
+      bot.y += Math.sin(angleToPowerUp) * bot.speed;
+
+      if (distToPowerUp < 10) {
+        activatePowerUp(bot, nearestPowerUp.type);
+        nearestPowerUp.used = true;
+      }
+    }
+  } else {
+    const target = getNextColoringTarget(bot);
+    const distToTarget = Math.sqrt(
+      (bot.x - target.x) ** 2 + (bot.y - target.y) ** 2
+    );
+
+    if (distToTarget < 50) {
+      const angleToTarget = Math.atan2(target.y - bot.y, target.x - bot.x);
+      bot.x += Math.cos(angleToTarget) * bot.speed;
+      bot.y += Math.sin(angleToTarget) * bot.speed;
+    }
   }
 }
 
@@ -187,9 +372,9 @@ function assignRandomLetters() {
 assignRandomLetters();
 
 function resetGame() {
-
+  updatePlayerColors();
   players.forEach((player, index) => {
-    player.isBot = getPlayerType(index + 1);  
+    player.isBot = getPlayerType(index + 1);
   });
 
   players.forEach((player) => {
@@ -201,6 +386,12 @@ function resetGame() {
     player.turningRight = false;
     player.blocked = false;
     player.blockedUntil = 0;
+  });
+
+  players.forEach((player) => {
+    if (player.isBot) {
+      botDecision(player);
+    }
   });
 
   gameTime = 30;
@@ -216,26 +407,34 @@ function resetGame() {
   gameLoop();
 }
 
+function drawPlayer(player) {
+  ctx.fillStyle = player.color;
+  ctx.beginPath();
+  ctx.arc(
+    player.x + gridSize / 2,
+    player.y + gridSize / 2,
+    gridSize / 2,
+    0,
+    Math.PI * 2
+  );
+  
+  ctx.fill();
+  ctx.fillStyle = "white";
+  ctx.font = "bold 16px Arial";
+  ctx.textAlign = "center";
+  ctx.fillText(
+    player.letter,
+    player.x + gridSize / 2,
+    player.y + gridSize / 2 + 5
+  );
+  
+}
+
+
+
 function draw() {
   players.forEach((player) => {
-    ctx.fillStyle = player.color;
-    ctx.beginPath();
-    ctx.arc(
-      player.x + gridSize / 2,
-      player.y + gridSize / 2,
-      gridSize / 2,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-    ctx.fillStyle = "white";
-    ctx.font = "bold 16px Arial";
-    ctx.textAlign = "center";
-    ctx.fillText(
-      player.letter,
-      player.x + gridSize / 2,
-      player.y + gridSize / 2 + 5
-    );
+    drawPlayer(player);
   });
 
   drawPowerUps();
@@ -317,7 +516,7 @@ function resolveWallCollision(player) {
 }
 
 function update() {
-  players.forEach(player => {
+  players.forEach((player) => {
     if (player.blocked && Date.now() < player.blockedUntil) {
       return;
     }
@@ -340,7 +539,13 @@ function update() {
 
         ctx.fillStyle = player.color;
         ctx.beginPath();
-        ctx.arc(prevX + gridSize / 2, prevY + gridSize / 2, gridSize / 2, 0, Math.PI * 2);
+        ctx.arc(
+          prevX + gridSize / 2,
+          prevY + gridSize / 2,
+          gridSize / 2,
+          0,
+          Math.PI * 2
+        );
         ctx.fill();
 
         const gridX = Math.floor(prevX / gridSize);
@@ -354,7 +559,12 @@ function update() {
                 const newX = gridX + Math.floor(x / gridSize);
                 const newY = gridY + Math.floor(y / gridSize);
 
-                if (newX >= 0 && newX < Math.ceil(canvas.width / gridSize) && newY >= 0 && newY < Math.ceil(canvas.height / gridSize)) {
+                if (
+                  newX >= 0 &&
+                  newX < Math.ceil(canvas.width / gridSize) &&
+                  newY >= 0 &&
+                  newY < Math.ceil(canvas.height / gridSize)
+                ) {
                   occupiedPixels[newY][newX] = player.color;
                 }
               }
@@ -366,10 +576,10 @@ function update() {
       }
     }
 
-    checkPowerUpCollision(player);  
+    checkPowerUpCollision(player);
   });
 
-  powerUps = powerUps.filter(powerUp => {
+  powerUps = powerUps.filter((powerUp) => {
     return Date.now() - powerUp.createdAt <= 10000 && !powerUp.used;
   });
 
@@ -381,7 +591,7 @@ function update() {
     }
   }
 
-  players.forEach(player => {
+  players.forEach((player) => {
     if (player.isBot) {
       const rand = Math.random();
       if (rand < 0.02) player.turningLeft = !player.turningLeft;
@@ -392,11 +602,10 @@ function update() {
 
 function displayPlayerInfo() {
   const playersInfoContainer = document.getElementById("playersInfo");
-  playersInfoContainer.innerHTML = '';  
+  playersInfoContainer.innerHTML = "";
   playersInfoContainer.classList.add("player-info-container");
 
   players.forEach((player, index) => {
-
     const playerInfo = document.createElement("div");
     playerInfo.classList.add("player-info");
 
@@ -425,10 +634,24 @@ document.addEventListener("keydown", (e) => {
   if (gameStarted) {
     players.forEach((player) => {
       if (!player.isBot) {
-        if (e.key === player.keys.left) {
+        if (e.key.toLowerCase() === player.keys.left) {
           player.turningLeft = true;
-        } else if (e.key === player.keys.right) {
+        } else if (e.key.toLowerCase() === player.keys.right) {
           player.turningRight = true;
+        }
+      }
+    });
+  }
+});
+
+document.addEventListener("keyup", (e) => {
+  if (gameStarted) {
+    players.forEach((player) => {
+      if (!player.isBot) {
+        if (e.key.toLowerCase() === player.keys.left) {
+          player.turningLeft = false;
+        } else if (e.key.toLowerCase() === player.keys.right) {
+          player.turningRight = false;
         }
       }
     });
@@ -475,9 +698,7 @@ function pauseGame() {
   document.getElementById("startButton").style.display = "block";
   const winner = getWinner();
   alert(
-    `Czas minął! Gra została zatrzymana.\nZwycięzca: ${
-      winner.color.charAt(0).toUpperCase() + winner.color.slice(1)
-    } z wynikiem: ${winner.coverage.toFixed(2)}%`
+    `Czas minął! Gra została zatrzymana.\nZwycięzca: Gracz ${winner.title} z wynikiem: ${winner.coverage.toFixed(2)}%`
   );
 }
 
@@ -489,7 +710,7 @@ function getWinner() {
     const coverage = calculateCoverage(player.color);
     if (coverage > maxCoverage) {
       maxCoverage = coverage;
-      winner = { color: player.color, coverage };
+      winner = { title: player.title, color: player.color, coverage };
     }
   });
 
